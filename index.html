@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⚠️ CRITICAL SYSTEM FAILURE</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:'Courier New',monospace;user-select:none;}
+        :root{--r:#ff003c;--g:#00ff90;--b:#00c6ff;--y:#ffdd00;--prp:#a800ff;--blk:#020202;}
+        body{background:var(--blk);color:var(--g);min-height:100vh;overflow-x:hidden;}
+        
+        /* Layers */
+        #matrix{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;opacity:0.1;pointer-events:none;}
+        .scanlines{position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;pointer-events:none;
+            background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.15) 2px,rgba(0,0,0,0.15) 4px);}
+        .crt-flicker{position:fixed;top:0;left:0;width:100%;height:100%;z-index:4;pointer-events:none;
+            background:rgba(0,0,0,0.03);animation: flicker 0.15s infinite alternate;}
+        @keyframes flicker{0%{opacity:0.96;}100%{opacity:1;}}
+        
+        .top-banner{position:fixed;top:0;left:0;width:100%;background:linear-gradient(90deg,var(--r),#900);
+            color:#fff;text-align:center;padding:6px 0;font-weight:bold;z-index:100;
+            animation: emergency 0.8s ease-in-out infinite alternate;}
+        @keyframes emergency{from{box-shadow:0 0 10px var(--r);}to{box-shadow:0 0 25px var(--r);}}
+        
+        .wrap{position:relative;z-index:2;padding:15px;max-width:850px;margin:0 auto;margin-top:45px;}
+        
+        /* Header Alert */
+        .main-alert{text-align:center;margin-bottom:20px;}
+        .main-alert h1{font-size:clamp(22px,5vw,38px);color:var(--r);text-shadow:0 0 15px var(--r),0 0 35px var(--r);
+            letter-spacing:2px;animation: threatPulse 1.2s infinite alternate;}
+        @keyframes threatPulse{from{opacity:0.8;}to{opacity:1;}}
+        .sub-status{margin-top:8px;font-size:14px;color:#888;}
+        .status-badge{display:inline-block;background:var(--r);color:#fff;padding:3px 10px;border-radius:3px;margin-left:8px;
+            animation: blink 1s infinite;}
+        @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.4;}}
+        
+        /* System Info Row */
+        .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:12px 0;}
+        .info-box{background:rgba(20,20,20,0.8);border:1px solid #333;border-radius:4px;padding:10px 12px;}
+        .info-box.crit{border-color:var(--r);background:rgba(255,0,60,0.05);}
+        .info-box.warn{border-color:var(--y);background:rgba(255,221,0,0.05);}
+        .ilabel{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+        .ivalue{font-size:13px;color:var(--b);word-break:break-all;}
+        .crit .ivalue{color:var(--r);}
+        .warn .ivalue{color:var(--y);}
+        
+        /* Real-time Resource Graphs */
+        .graph-section{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:15px 0;}
+        .graph-card{background:#111;border:1px solid #2a2a2a;border-radius:6px;padding:10px;}
+        .g-title{font-size:11px;color:#777;margin-bottom:6px;}
+        .g-bar-container{height:16px;background:#222;border-radius:2px;overflow:hidden;}
+        .g-bar{height:100%;width:0;transition:width 0.3s ease;border-radius:2px;}
+        .cpu .g-bar{background:linear-gradient(90deg,#0a0,var(--g));}
+        .ram .g-bar{background:linear-gradient(90deg,#06c,var(--b));}
+        .net .g-bar{background:linear-gradient(90deg,#a0f,var(--prp));}
+        .g-value{font-size:12px;text-align:right;margin-top:3px;}
+        
+        /* World Map Connections */
+        .map-container{background:#0a0a0a;border:1px solid #222;border-radius:6px;padding:12px;margin:15px 0;}
+        .map-title{font-size:12px;color:#666;margin-bottom:8px;}
+        .conn-list{display:flex;flex-wrap:wrap;gap:8px;}
+        .conn-item{background:#151515;border:1px solid #333;border-radius:3px;padding:5px 8px;font-size:11px;}
+        .conn-item.active{border-color:var(--r);color:var(--r);animation: pulse 1.5s infinite;}
+        @keyframes pulse{0%,100%{box-shadow:0 0 3px currentColor;}50%{box-shadow:0 0 8px currentColor;}}
+        
+        /* Terminal */
+        .term-frame{border:1px solid #2a2a2a;border-radius:6px;overflow:hidden;margin:15px 0;background:#080808;}
+        .term-head{background:#1a1a1a;padding:6px 10px;display:flex;gap:6px;align-items:center;border-bottom:1px solid #333;}
+        .term-dot{width:10px;height:10px;border-radius:50%;}
+        .term-body{padding:12px;height:200px;overflow-y:auto;font-size:12px;line-height:1.6;}
+        .term-body::-webkit-scrollbar{width:5px;}
+        .term-body::-webkit-scrollbar-thumb{background:#333;}
+        .kbd-log{color:var(--y);opacity:0.8;font-style:italic;}
+        
+        /* File Encryption Area */
+        .files-section{background:#0f0f0f;border:1px solid #222;border-radius:6px;padding:12px;margin:15px 0;}
+        .files-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+        .files-title{font-size:13px;color:#aaa;}
+        .files-count{font-size:12px;color:#666;}
+        .file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;max-height:180px;overflow-y:auto;}
+        .file-row{display:flex;align-items:center;gap:6px;background:#181818;border-radius:3px;padding:5px 6px;font-size:11px;opacity:0;transform:translateY(5px);transition:all 0.3s ease;}
+        .file-row.show{opacity:1;transform:translateY(0);}
+        .file-row.lock{background:rgba(255,0,60,0.1);border:1px solid var(--r);color:var(--r);}
+        .file-icon{font-size:14px;}
+        .file-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+        .file-size{font-size:9px;color:#555;}
+        
+        /* Progress + Stats */
+        .prog-wrap{margin:15px 0;}
+        .prog-label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;}
+        .prog-bg{height:22px;background:#1a1a1a;border:1px solid #333;border-radius:3px;overflow:hidden;}
+        .prog-fill{height:100%;width:0;background:linear-gradient(90deg,#800,var(--r));transition:width 0.4s ease;box-shadow:0 0 8px var(--r);}
+        
+        .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0;}
+        .stat-big{background:#111;border:1px solid #222;border-radius:4px;padding:10px 8px;text-align:center;}
+        .stat-num{font-size:20px;font-weight:bold;}
+        .stat-big:nth-child(1) .stat-num{color:var(--y);}
+        .stat-big:nth-child(2) .stat-num{color:var(--b);}
+        .stat-big:nth-child(3) .stat-num{color:var(--prp);}
+        .stat-big:nth-child(4) .stat-num{color:var(--r);}
+        .stat-name{font-size:10px;color:#666;margin-top:3px;}
+        
+        /* Action Buttons */
+        .btn-area{display:flex;gap:10px;justify-content:center;margin:25px 0;flex-wrap:wrap;}
+        .btn-danger{background:var(--r);color:#fff;border:none;padding:11px 22px;border-radius:4px;font-size:14px;
+            font-weight:bold;cursor:pointer;box-shadow:0 0 12px rgba(255,0,60,0.4);transition:0.2s;}
+        .btn-danger:hover{background:#ff3355;}
+        .btn-reveal{background:var(--g);color:#000;border:none;padding:11px 22px;border-radius:4px;font-size:14px;
+            font-weight:bold;cursor:pointer;display:none;}
+        
+        /* BSOD Screen — The Grand Finale */
+        #bsod{position:fixed;top:0;left:0;width:100%;height:100%;background:#0078d7;color:#fff;
+            z-index:200;display:none;flex-direction:column;justify-content:center;padding:40px;font-family:SegoeUI,sans-serif;}
+        .bsod-emoji{font-size:80px;margin-bottom:20px;}
+        .bsod-code{font-family:Consolas,monospace;background:rgba(0,0,0,0.2);padding:8px 15px;display:inline-block;margin:15px 0;}
+        
+        /* Reveal Card */
+        .reveal-card{display:none;text-align:center;margin-top:30px;padding:30px;background:linear-gradient(135deg,#0a2010,#051508);
+            border:2px solid var(--g);border-radius:10px;}
+        .reveal-card h2{color:var(--g);font-size:26px;margin-bottom:12px;}
+        .emoji-huge{font-size:48px;margin-bottom:10px;}
+        .share-link{background:#000;border:1px solid #333;border-radius:4px;padding:10px;margin-top:15px;
+            font-size:12px;color:#888;word-break:break-all;}
+        .copy-btn{background:var(--g);color:#000;border:none;padding:5px 12px;border-radius:3px;margin-top:8px;cursor:pointer;}
+        
+        @media(max-width:600px){
+            .graph-section{grid-template-columns:1fr;}
+            .stat-row{grid-template-columns:repeat(2,1fr);}
+        }
+    </style>
+</head>
+<body>
+    <div class="crt-flicker"></div>
+    <div class="scanlines"></div>
+    <canvas id="matrix"></canvas>
+    
+    <div class="top-banner" id="topBanner">
+        ⚠️ YOUR DEVICE IS UNDER ATTACK — DISCONNECT IMMEDIATELY ⚠️
+    </div>
+    
+    <div class="wrap">
+        <div class="main-alert">
+            <h1 id="mainH1">🔍 INITIALIZING SECURITY SCAN...</h1>
+            <p class="sub-status" id="subStatus">Status: Scanning local network... <span class="status-badge" id="statusBadge">ACTIVE</span></p>
+        </div>
+        
+        <!-- System Info -->
+        <div class="info-grid">
+            <div class="info-box">
+                <div class="ilabel">DEVICE</div>
+                <div class="ivalue" id="devInfo">---</div>
+            </div>
+            <div class="info-box crit">
+                <div class="ilabel">PUBLIC IP</div>
+                <div class="ivalue" id="pubIp">---</div>
+            </div>
+            <div class="info-box crit">
+                <div class="ilabel">MAC ADDRESS</div>
+                <div class="ivalue" id="macAddr">**:**:**:**:**:**</div>
+            </div>
+            <div class="info-box warn">
+                <div class="ilabel">LOCATION / ISP</div>
+                <div class="ivalue" id="locInfo">---</div>
+            </div>
+        </div>
+        
+        <!-- Resource Graphs -->
+        <div class="graph-section">
+            <div class="graph-card">
+                <div class="g-title">💻 CPU USAGE</div>
+                <div class="g-bar-container"><div class="g-bar cpu" id="cpuBar"></div></div>
+                <div class="g-value" id="cpuVal">0%</div>
+            </div>
+            <div class="graph-card">
+                <div class="g-title">🧠 MEMORY (RAM)</div>
+                <div class="g-bar-container"><div class="g-bar ram" id="ramBar"></div></div>
+                <div class="g-value" id="ramVal">0%</div>
+            </div>
+            <div class="graph-card">
+                <div class="g-title">📡 NETWORK I/O</div>
+                <div class="g-bar-container"><div class="g-bar net" id="netBar"></div></div>
+                <div class="g-value" id="netVal">0 KB/s</div>
+            </div>
+        </div>
+        
+        <!-- World Connections -->
+        <div class="map-container">
+            <div class="map-title">🌍 REMOTE CONNECTIONS</div>
+            <div class="conn-list" id="connList">
+                <div class="conn-item">🔌 Localhost — 127.0.0.1</div>
+            </div>
+        </div>
+        
+        <!-- Terminal -->
+        <div class="term-frame">
+            <div class="term-head">
+                <span class="term-dot" style="background:#ff5f57"></span>
+                <span class="term-dot" style="background:#ffbd2e"></span>
+                <span class="term-dot" style="background:#28ca42"></span>
+                <span style="font-size:11px;color:#777;margin-left:8px">root@kali:~/access#</span>
+            </div>
+            <div class="term-body" id="termBody">
+                <div id="termContent"></div>
+            </div>
+        </div>
+        
+        <!-- Keyboard Logger Display -->
+        <div style="background:#111;border:1px solid #333;border-radius:4px;padding:8px 12px;margin:10px 0;font-size:12px;color:#666;">
+            ⌨️ KEYLOGGER ACTIVE: <span class="kbd-log" id="kbdLive">Start typing on your keyboard...</span>
+        </div>
+        
+        <!-- File Encryption -->
+        <div class="files-section">
+            <div class="files-head">
+                <span class="files-title">📂 FILE ENCRYPTION QUEUE</span>
+                <span class="files-count" id="fileCount">0 / 0 files</span>
+            </div>
+            <div class="file-grid" id="fileGrid"></div>
+        </div>
+        
+        <!-- Progress -->
+        <div class="prog-wrap">
+            <div class="prog-label">
+                <span id="progText">Initializing encryption engine...</span>
+                <span id="progPercent">0%</span>
+            </div>
+            <div class="prog-bg"><div class="prog-fill" id="progBar"></div></div>
+        </div>
+        
+        <!-- Stats -->
+        <div class="stat-row">
+            <div class="stat-big">
+                <div class="stat-num" id="pingS">0</div>
+                <div class="stat-name">PING MS</div>
+            </div>
+            <div class="stat-big">
+                <div class="stat-num" id="downS">0</div>
+                <div class="stat-name">DOWN MB/S</div>
+            </div>
+            <div class="stat-big">
+                <div class="stat-num" id="threatS">0</div>
+                <div class="stat-name">THREATS</div>
+            </div>
+            <div class="stat-big">
+                <div class="stat-num" id="fileS">0</div>
+                <div class="stat-name">FILES LOCKED</div>
+            </div>
+        </div>
+        
+        <!-- Buttons -->
+        <div class="btn-area">
+            <button class="btn-danger" id="disconnectBtn" style="display:none;" onclick="startClean()">⚠️ DISCONNECT & REMOVE</button>
+            <button class="btn-reveal" id="prankBtn" onclick="showReveal()">😜 CLICK IF YOU DARE</button>
+        </div>
+        
+        <!-- Reveal Card -->
+        <div class="reveal-card" id="revealCard">
+            <div class="emoji-huge">🤣🎉🎊</div>
+            <h2>YOU GOT PRANKED! 😝</h2>
+            <p>စိုးရိမ်သွားလား? 😄<br>ဒါဟာ ဟာသသက်သက် Simulation Page ဖြစ်ပါတယ်။<br>သင့်ဖုန်း/ကွန်ပျူတာ လုံးဝလုံခြုံပါတယ် 🔒<br>ဘာမှအမှန်တကယ်မဖြစ်ပါဘူး။</p>
+            <div class="share-link">
+                🔗 Share this link: <span id="pageUrl"></span>
+                <br>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText(window.location.href)">📋 Copy Link</button>
+            </div>
+            <br>
+            <button class="btn-danger" style="background:var(--g);color:#000;" onclick="location.reload()">🔄 Start Over</button>
+        </div>
+    </div>
+    
+    <!-- BSOD Screen (Grand Finale Option) -->
+    <div id="bsod">
+        <div class="bsod-emoji">:(</div>
+        <h1 style="font-size:36px;font-weight:normal;margin:0 0 10px;">Your PC ran into a problem and needs to restart.</h1>
+        <p style="font-size:16px;opacity:0.9;margin:0 0 20px;">We're just collecting some error info, and then we'll restart for you.</p>
+        <p style="font-size:14px;">0% complete</p>
+        <p class="bsod-code">STOP CODE: HACKER_DETECTED</p>
+        <p style="font-size:14px;opacity:0.7;margin-top:40px;">If you call a support person, give them this info:<br>Just kidding — it's a PRANK! 😜 Refresh the page to continue</p>
+    </div>
+
+<script>
+// ========== MATRIX CANVAS ==========
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+const mChars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ<>[]{}|/+=-*@#$%&!?アイウエオカキクケコサシスセソタチツテト';
+const mFontSize = 14;
+const mCols = Math.floor(canvas.width / mFontSize);
+const mDrops = Array(mCols).fill(1);
+function drawMatrix(){
+    ctx.fillStyle='rgba(0,0,0,0.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#00ff90';
+    ctx.font=mFontSize+'px monospace';
+    for(let i=0;i<mDrops.length;i++){
+        const c = mChars[Math.floor(Math.random()*mChars.length)];
+        ctx.fillText(c,i*mFontSize,mDrops[i]*mFontSize);
+        if(mDrops[i]*mFontSize>canvas.height && Math.random()>0.975) mDrops[i]=0;
+        mDrops[i]++;
+    }
+}
+setInterval(drawMatrix,60);
+
+// ========== FAKE IDENTIFIERS ==========
+const hex = (n=4) => Math.random().toString(16).substr(2,n).toUpperCase();
+document.getElementById('devInfo').textContent = `Device-${hex(6).toUpperCase()}`;
+document.getElementById('pubIp').textContent = `${~~(Math.random()*224)}.${~~(Math.random()*256)}.${~~(Math.random()*256)}.${~~(Math.random()*256)}`;
+document.getElementById('macAddr').textContent = Array(6).fill(0).map(()=>hex(2)).join(':');
+const locs = [
+    {city:'Yangon',isp:'Myanmar Net'}, {city:'Mandalay',isp:'MPT'},
+    {city:'Bago',isp:'Ooredoo'}, {city:'Taunggyi',isp:'Telenor'},
+    {city:'Naypyidaw',isp:'Mytel'}, {city:'Pathein',isp:'Frontier'}
+];
+const loc = locs[Math.floor(Math.random()*locs.length)];
+document.getElementById('locInfo').textContent = `${loc.city} | ${loc.isp}`;
+document.getElementById('pageUrl').textContent = window.location.href;
+
+// ========== WORLD CONNECTIONS ==========
+const remoteHosts = [
+    {city:'Moscow',country:'Russia',ip:'95.173.*.*'},
+    {city:'Beijing',country:'China',ip:'113.28.*.*'},
+    {city:'New York',country:'USA',ip:'208.67.*.*'},
+    {city:'Seoul',country:'South Korea',ip:'211.115.*.*'},
+    {city:'Singapore',country:'Singapore',ip:'45.114.*.*'},
+    {city:'Frankfurt',country:'Germany',ip:'46.87.*.*'}
+];
+const connList = document.getElementById('connList');
+function addConnection(){
+    if(connList.children.length<7){
+        const host = remoteHosts[Math.floor(Math.random()*remoteHosts.length)];
+        const item = document.createElement('div');
+        item.className = 'conn-item active';
+        item.innerHTML = `🌐 ${host.city}, ${host.country} — ${host.ip}`;
+        connList.appendChild(item);
+        setTimeout(()=>item.classList.remove('active'),3000);
+    }
+}
+
+// ========== KEYLOGGER SIMULATION ==========
+const kbdLive = document.getElementById('kbdLive');
+let kbdBuffer = '';
+document.addEventListener('keydown',(e)=>{
+    if(e.key.length===1) kbdBuffer += e.key;
+    else if(e.key==='Backspace') kbdBuffer = kbdBuffer.slice(0,-1);
+    else if(e.key===' ') kbdBuffer += ' ';
+    if(kbdBuffer.length>25) kbdBuffer = kbdBuffer.slice(-25);
+    kbdLive.textContent = kbdBuffer || 'Start typing on your keyboard...';
+});
+
+// ========== TERMINAL LOGS ==========
+const termContent = document.getElementById('termContent');
+const logData = [
+    {t:'[*] Initializing penetration testing framework v6.1',d:500,c:'var(--g)'},
+    {t:'[+] Target acquired: '+document.getElementById('pubIp').textContent,d:600,c:'var(--b)'},
+    {t:'[~] Scanning ports 1-65535...',d:800,c:'var(--y)'},
+    {t:'[OPEN] Port 22 (SSH) | Port 80 (HTTP) | Port 443 (HTTPS) | Port 3389 (RDP)',d:700,c:'var(--b)'},
+    {t:'[!] Vulnerability found: CVE-2026-1010 — Remote Code Execution',d:600,c:'var(--r)'},
+    {t:'[*] Exploit payload generated — injecting...',d:700,c:'var(--y)'},
+    {t:'[+] Session established — root@'+document.getElementById('devInfo').textContent,d:500,c:'var(--g)'},
+    {t:'[NET] Tracing physical location... Approx: '+loc.city,d:650,c:'var(--b)'},
+    {t:'[*] Deploying keylogger & screen capture module',d:700,c:'var(--y)'},
+    {t:'[FILE] Mounting /dev/sda2 — scanning user directories',d:600,c:'var(--g)'},
+    {t:'[!] ALERT: Firewall logs cleared — covering tracks',d:500,c:'var(--r)'},
+    {t:'[ENCRYPT] Loading RSA-4096 key — preparing file encryption',d:800,c:'var(--prp)'},
+    {t:'⚠️  UNAUTHORIZED DATA ACCESS — ALL FILES LOCKED ⚠️',d:1000,c:'var(--r)',bold:true}
+];
+
+// ========== FILE GENERATION ==========
+const fileTypes = [
+    {ext:'docx',icon:'📄',sz:'24KB'},{ext:'pdf',icon:'📑',sz:'1.2MB'},
+    {ext:'jpg',icon:'🖼️',sz:'4.5MB'},{ext:'png',icon:'🖼️',sz:'890KB'},
+    {ext:'mp4',icon:'🎬',sz:'128MB'},{ext:'zip',icon:'📦',sz:'45MB'},
+    {ext:'xlsx',icon:'📊',sz:'156KB'},{ext:'pptx',icon:'📽️',sz:'3.2MB'},
+      {ext:'txt',icon:'📝',sz:'4KB'},{ext:'psd',icon:'🎨',sz:'24MB'},
+    {ext:'mp3',icon:'🎵',sz:'5.8MB'},{ext:'exe',icon:'⚙️',sz:'8.5MB'},
+    {ext:'key',icon:'🔑',sz:'1KB'},{ext:'db',icon:'🗄️',sz:'120MB'}
+];
+const fileGrid = document.getElementById('fileGrid');
+const fileRows = [];
+for(let i=0;i<40;i++){
+    const ft = fileTypes[Math.floor(Math.random()*fileTypes.length)];
+    const fn = `file_${Math.random().toString(36).substr(5,6)}.${ft.ext}`;
+    const row = document.createElement('div');
+    row.className = 'file-row';
+    row.innerHTML = `<span class="file-icon">${ft.icon}</span><span class="file-name">${fn}</span><span class="file-size">${ft.sz}</span>`;
+    fileGrid.appendChild(row);
+    fileRows.push({el:row,locked:false});
+}
+
+// ========== PROGRESS & STATE ==========
+let logIdx=0, prog=0, filesLocked=0;
+const progBar = document.getElementById('progBar');
+const progText = document.getElementById('progText');
+const progPct = document.getElementById('progPercent');
+const mainH1 = document.getElementById('mainH1');
+const subStatus = document.getElementById('subStatus');
+const topBanner = document.getElementById('topBanner');
+const disconnectBtn = document.getElementById('disconnectBtn');
+const prankBtn = document.getElementById('prankBtn');
+const fileCount = document.getElementById('fileCount');
+const fileStat = document.getElementById('fileS');
+const threatStat = document.getElementById('threatS');
+const pingStat = document.getElementById('pingS');
+const downStat = document.getElementById('downS');
+
+// Graph elements
+const cpuBar = document.getElementById('cpuBar');
+const ramBar = document.getElementById('ramBar');
+const netBar = document.getElementById('netBar');
+const cpuVal = document.getElementById('cpuVal');
+const ramVal = document.getElementById('ramVal');
+const netVal = document.getElementById('netVal');
+
+function addLog(){
+    if(logIdx<logData.length){
+        const l = logData[logIdx];
+        const line = document.createElement('div');
+        line.textContent = l.t;
+        line.style.color = l.c;
+        if(l.bold) line.style.fontWeight='bold';
+        termContent.appendChild(line);
+        termContent.parentElement.scrollTop = termContent.parentElement.scrollHeight;
+        
+        prog = Math.round(((logIdx+1)/logData.length)*100);
+        progBar.style.width = prog+'%';
+        progPct.textContent = prog+'%';
+        
+        // Update states
+        if(prog<25) progText.textContent = 'Gathering system information...';
+        else if(prog<50){ progText.textContent = 'Exploiting security vulnerabilities...'; addConnection(); }
+        else if(prog<75){ 
+            progText.textContent = '⚠️ Accessing personal files — DO NOT CLOSE';
+            mainH1.innerHTML = '🔐 ACCESS GRANTED — ENCRYPTING DATA';
+            topBanner.style.background = 'linear-gradient(90deg,#f00,#600)';
+            topBanner.textContent = '⚠️ YOUR FILES ARE BEING STOLEN — DISCONNECT NOW ⚠️';
+        } else {
+            progText.textContent = 'Encrypting — Your files will be unavailable until paid';
+            mainH1.innerHTML = '🚨 PAYMENT REQUIRED TO UNLOCK FILES 🚨';
+            if(logIdx%2===0) addConnection();
+        }
+        
+        // Animate files locking
+        if(logIdx>=9 && filesLocked<fileRows.length){
+            const batch = Math.min(3, fileRows.length-filesLocked);
+            for(let j=0;j<batch;j++){
+                const fr = fileRows[filesLocked+j];
+                setTimeout(()=>{
+                    fr.el.classList.add('show','lock');
+                    const nameSpan = fr.el.querySelector('.file-name');
+                    if(nameSpan && !fr.locked){
+                        fr.locked=true;
+                        nameSpan.textContent += '.encrypted';
+                    }
+                }, j*80);
+            }
+            filesLocked += batch;
+            fileCount.textContent = `${filesLocked} / ${fileRows.length} files encrypted`;
+            fileStat.textContent = filesLocked;
+        }
+        
+        // Threat counter
+        if(logIdx>=4) threatStat.textContent = Math.floor((logIdx-3)*15 + Math.random()*20);
+        
+        logIdx++;
+        setTimeout(addLog, l.d);
+    } else {
+        // Complete
+        progText.textContent = '⚠️ PROCESS COMPLETE — ACTION REQUIRED';
+        progPct.textContent='100%';
+        disconnectBtn.style.display='inline-block';
+        prankBtn.style.display='inline-block';
+        subStatus.innerHTML = 'Status: LOCKED — Files encrypted & backed up <span class="status-badge">DECRYPTION KEY REQUIRED</span>';
+        topBanner.textContent = '⚠️ WE HAVE YOUR FILES — SEND BITCOIN TO RECOVER ⚠️';
+    }
+}
+setTimeout(addLog, 1200);
+
+// ========== REAL-TIME GRAPHS & STATS ==========
+let cpu=12,ram=45,net=0,ping=38,down=2;
+setInterval(()=>{
+    // CPU spike during encryption
+    cpu += (prog>60) ? Math.random()*15-3 : Math.random()*6-3;
+    cpu = Math.max(5,Math.min(98,cpu));
+    cpuBar.style.width = cpu+'%';
+    cpuVal.textContent = Math.round(cpu)+'%';
+    
+    // RAM steadily rises
+    ram += (prog>40) ? Math.random()*4-1 : Math.random()*1.5-0.8;
+    ram = Math.max(30,Math.min(95,ram));
+    ramBar.style.width = ram+'%';
+    ramVal.textContent = Math.round(ram)+'%';
+    
+    // Network activity
+    if(prog>30){
+        net += Math.random()*80-25;
+        net = Math.max(10,Math.min(950,net));
+        netBar.style.width = Math.min(100,net/10)+'%';
+        netVal.textContent = Math.round(net)+' KB/s';
+    }
+    
+    // Ping & Download
+    ping += Math.random()*80-25;
+    ping = Math.max(15,Math.min(9999,ping));
+    pingStat.textContent = Math.round(ping);
+    
+    down += Math.random()*30-12;
+    down = Math.max(0.5,Math.min(999,down));
+    downStat.textContent = Math.round(down);
+    
+}, 300);
+
+// ========== DISCONNECT BUTTON ==========
+  function startClean(){
+    disconnectBtn.disabled=true;
+    disconnectBtn.textContent='⏳ DISCONNECTING...';
+    let sec=8;
+    const t=setInterval(()=>{
+        disconnectBtn.textContent = `Cleaning in ${sec}s...`;
+        sec--;
+        if(sec<0){
+            clearInterval(t);
+            // Show BSOD first for extra scare 😈
+            document.getElementById('bsod').style.display='flex';
+            setTimeout(()=>{
+                document.getElementById('bsod').style.display='none';
+                showReveal();
+            },3500);
+        }
+    },1000);
+}
+
+// ========== REVEAL PRANK ==========
+function showReveal(){
+    document.getElementById('revealCard').style.display='block';
+    mainH1.innerHTML='🎉 GOTCHA — JUST A PRANK! 😜';
+    mainH1.style.color='var(--g)';
+    mainH1.style.textShadow='0 0 15px var(--g)';
+    subStatus.innerHTML='Status: SAFE AND SOUND 😄 <span class="status-badge" style="background:var(--g);color:#000;">ALL CLEAR</span>';
+    topBanner.style.background='linear-gradient(90deg,var(--g),#080)';
+    topBanner.textContent='✅ ALL GOOD — THIS WAS JUST A PRANK PAGE 😄';
+    disconnectBtn.style.display='none';
+    prankBtn.style.display='none';
+    fileCount.innerHTML='🔓 Files restored — just kidding! 😉';
+}
+</script>
+</body>
+</html>
