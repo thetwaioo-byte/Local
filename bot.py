@@ -43,7 +43,7 @@ async def get_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(data)
 
 async def list_countries(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("("🔄 စာရင်းပြုစုနေသည်...")
+    await update.message.reply_text("🔄 စာရင်းပြုစုနေသည်...")
     data = fetch_subscription()
     lines = [l.strip() for l in data.splitlines() if l.startswith("ss://")]
     countries = {}
@@ -79,3 +79,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
